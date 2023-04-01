@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import math
+
 import numpy as np
 from numpy.linalg import inv, det, slogdet
 
@@ -14,7 +17,7 @@ class UnivariateGaussian:
         Parameters
         ----------
         biased_var : bool, default=False
-            Should fitted estimator of variance be a biased or unbiased estimator
+            Should a fitted estimator of variance be biased or unbiased estimator
 
         Attributes
         ----------
@@ -51,8 +54,11 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
 
+
+        self.mu_ = X.mean()
+        div_factor = len(X) if self.biased_ else (len(X)-1)
+        self.var_ = np.power(X-self.mu_, 2).sum()/div_factor
         self.fitted_ = True
         return self
 
@@ -76,7 +82,8 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        exp_parameter = -np.power(X-self.mu_, 2)/(2*math.pow(self.var_, 2))
+        return np.exp(exp_parameter)/(math.sqrt(2*math.pi*self.var_))
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -97,7 +104,13 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
+        # After some math calculations we can arrive to a simplified equation:
+        #       -sum((xi-mu)^2)/(2*sigma) -m*ln(2*pi*sigma)/2
+
+        sum_x_mu = np.power(X-mu, 2).sum()
+        ln_calc = math.log(2*math.pi*sigma)
+
+        return -sum_x_mu/(2*sigma) -X.size*ln_calc/2
 
 
 class MultivariateGaussian:
