@@ -17,42 +17,56 @@ SAMPLES_STEP = 10
 
 Q2_X_AXIS_NAME = "number of samples"
 Q2_Y_AXIS_NAME = "|estimatedVal - trueVal|"
+Q2_TITLE = "The distance of the estimated value from the true value as a function of samples amount"
 
 
 
 def test_univariate_gaussian():
+    np.random.seed(0)
     # Question 1 - Draw samples and print fitted model
-    q1_samples = np.random.normal(UNIVAR_MU, UNIVAR_SIGMA, UNIVAR_SAMPLES_AMOUNT)
-    q1_model = UnivariateGaussian().fit(q1_samples)
+    samples = np.random.normal(UNIVAR_MU, UNIVAR_SIGMA, UNIVAR_SAMPLES_AMOUNT)
+    q1_model = UnivariateGaussian().fit(samples)
     print("(" + str(q1_model.mu_) + ", " + str(q1_model.var_) + ")")
 
     # Question 2 - Empirically showing sample mean is consistent
-    distances = []
-    true_val = q1_model.mu_
-    # for sampSize in range(MIN_SAMPLES_AMOUNT, UNIVAR_SAMPLES_AMOUNT+1, SAMPLES_STEP):
-    #     estimated_val = UnivariateGaussian().fit(q1_samples[:sampSize]).mu_
-    #     distances.append(np.abs(estimated_val-true_val))
+    true_value = q1_model.mu_
+    x_axis = np.arange(10, 1001, 10)
+    y_axis = []
 
-    for sampSize in np.arange(1, UNIVAR_SAMPLES_AMOUNT/10, dtype=np.int)*10:
-        distances.append(np.abs(UnivariateGaussian().fit(q1_samples[:sampSize]).mu_))
+    for i in range(len(x_axis)):
+        model = UnivariateGaussian().fit(samples[:i + 1])
+        estimated = model.mu_
+        distance = np.abs(estimated - true_value)
+        y_axis.append(distance)
 
-
-    x_axis = list(range(len(distances)))
-    y_axis = distances
-    q2_df = pd.DataFrame({Q2_X_AXIS_NAME: x_axis, Q2_Y_AXIS_NAME: y_axis})
-    fig = px.scatter(q2_df, x=Q2_X_AXIS_NAME, y=Q2_Y_AXIS_NAME, title="how far are the estimated values of different amount of samples from the true value.")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=list(range(10,1001,10)), y=y_axis, mode="markers"))
+    fig.update_layout(title=Q2_TITLE, xaxis_title=Q2_X_AXIS_NAME, yaxis_title=Q2_Y_AXIS_NAME)
     fig.show()
 
-    # mu_hat = [np.abs(UNIVAR_MU - UnivariateGaussian().fit(q1_samples[:n]).mu_)
-    #           for n in np.arange(1, len(q1_samples) / 10, dtype=np.int) * 10]
-    # go.Figure(go.Scatter(x=list(range(len(mu_hat))), y=mu_hat, mode="markers", marker=dict(color="black")),
+    # mu_hat = [np.abs(true_value - UnivariateGaussian().fit(samples[:n]).mu_)
+    #           for n in np.arange(1, len(samples) / 10, dtype=np.int) * 10]
+    # go.Figure(go.Scatter(x=list(range(0, len(mu_hat)*10, 10)), y=mu_hat, mode="markers", marker=dict(color="black")),
     #           layout=dict(template="simple_white",
     #                       title="Deviation of Sample Mean Estimation As Function of Sample Size",
     #                       xaxis_title=r"$\text{Sample Size }n$",
     #                       yaxis_title=r"$\text{Sample Mean Estimator }\hat{\mu}_n$")) \
     #     .write_image("mean.deviation.over.sample.size.png")
-
+    # true_value = q1_model.mu_
+    # x_axis = np.linspace(10, 1010, 100)
+    # y_axis = []
     #
+    # for i in range(10, 1010, 10):
+    #     gaus = UnivariateGaussian()
+    #     gaus.fit(samples[:i])
+    #     estimated = gaus.mu_
+    #     distance = np.abs(estimated - true_value)
+    #     y_axis.append(distance)
+    #
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=x_axis, y=y_axis, mode="markers+lines"))
+    # fig.update_layout(title="17", xaxis_title="18", yaxis_title="19", height=300)
+    # fig.write_image("q2_graph_3.png")
     # # Question 3 - Plotting Empirical PDF of fitted model
     # raise NotImplementedError()
 
@@ -71,4 +85,4 @@ def test_multivariate_gaussian():
 if __name__ == '__main__':
     np.random.seed(0)
     test_univariate_gaussian()
-    test_multivariate_gaussian()
+    #test_multivariate_gaussian()
