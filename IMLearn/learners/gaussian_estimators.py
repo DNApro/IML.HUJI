@@ -54,11 +54,9 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-
-
-        self.mu_ = X.mean()
-        div_factor = len(X) if self.biased_ else (len(X)-1)
-        self.var_ = np.power(X-self.mu_, 2).sum()/div_factor
+        self.mu_ = np.mean(X)
+        div_factor = X.size if self.biased_ else (X.size-1)
+        self.var_ = np.sum(np.power(X-self.mu_, 2))/div_factor
         self.fitted_ = True
         return self
 
@@ -156,7 +154,11 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        self.mu_ = np.mean(X, axis=0)
+        subtract_x_mu = X - self.mu_
+
+        # the covariance matrix of m random vectors is <X-mu | X-mu>/(m-1)
+        self.cov_ = (subtract_x_mu.T @ subtract_x_mu)/(len(X)-1)
 
         self.fitted_ = True
         return self
@@ -181,7 +183,18 @@ class MultivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        d, m = X.shape[1], X.shape[0]
+        det_sigma = np.linalg.det(cov)
+        sigma_inv = np.linalg.inv(cov)
+        subtract_x_mu = X - mu
+
+        pdf_vec = np.zeros(m)
+        for index in range(m):
+            pdf_vec[i] = subtract_x_mu[index].T @ sigma_inv @ subtract_x_mu[index]
+
+        exponent = np.exp(-pdf_vec/2)
+        two_pi_d = np.pow(2*np.pi, d)
+        return exponent/np.sqrt(two_pi_d*det_sigma)
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
@@ -202,4 +215,10 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
-        raise NotImplementedError()
+        d, m = X.shape[1], X.shape[0]
+        det_sigma = np.linalg.det(cov)
+        sigma_inv = np.linalg.inv(cov)
+        subtract_x_mu = X - mu
+        sum_vec_multi_in_cov = np.sum(subtract_x_mu @ sigma_inv * subtract_x_mu)
+        ln_calc = m * d * np.log(2*np.pi*det_sigma)
+        return -(sum_vec_multi_in_cov + ln_calc)/2

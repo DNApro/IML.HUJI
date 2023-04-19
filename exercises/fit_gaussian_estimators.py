@@ -5,84 +5,91 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 import plotly.express as px
+
 pio.templates.default = "simple_white"
 
-UNIVAR_SAMPLES_AMOUNT = 1000
-UNIVAR_MU = 10
-UNIVAR_SIGMA = 1
-
+SAMPLES_AMOUNT = 1000
 MIN_SAMPLES_AMOUNT = 10
 SAMPLES_STEP = 10
 
+UNIVAR_MU = 10
+UNIVAR_SIGMA = 1
 
 Q2_X_AXIS_NAME = "number of samples"
 Q2_Y_AXIS_NAME = "|estimatedVal - trueVal|"
 Q2_TITLE = "The distance of the estimated value from the true value as a function of samples amount"
-
+Q3_X_AXIS_NAME = "Samples"
+Q3_Y_AXIS_NAME = "The PDF of a sample"
+Q3_TITLE = "The PDF distribution of the samples"
 
 
 def test_univariate_gaussian():
-    np.random.seed(0)
     # Question 1 - Draw samples and print fitted model
-    samples = np.random.normal(UNIVAR_MU, UNIVAR_SIGMA, UNIVAR_SAMPLES_AMOUNT)
+    samples = np.random.normal(UNIVAR_MU, UNIVAR_SIGMA, SAMPLES_AMOUNT)
     q1_model = UnivariateGaussian().fit(samples)
-    print("(" + str(q1_model.mu_) + ", " + str(q1_model.var_) + ")")
+    print("(" + str(np.round(q1_model.mu_, 3)) + ", " + str(np.round(q1_model.var_, 3)) + ")")
 
     # Question 2 - Empirically showing sample mean is consistent
-    true_value = q1_model.mu_
-    x_axis = np.arange(10, 1001, 10)
-    y_axis = []
+    true_val = q1_model.mu_
+    xaxis = np.arange(0, SAMPLES_AMOUNT / SAMPLES_STEP, dtype=int) + 1
+    xaxis = xaxis * 10
+    distances = []
+    for index in xaxis:
+        estimated_val = UnivariateGaussian().fit(samples[:index]).mu_
+        distances.append(np.abs(estimated_val - UNIVAR_MU))
+    fig_q2 = go.Figure()
+    fig_q2.add_trace(go.Scatter(x=xaxis, y=distances, mode="markers+lines"))
+    fig_q2.update_layout(title=Q2_TITLE, xaxis_title=Q2_X_AXIS_NAME, yaxis_title=Q2_Y_AXIS_NAME, height=400, width=1200)
+    fig_q2.show()
 
-    for i in range(len(x_axis)):
-        model = UnivariateGaussian().fit(samples[:i + 1])
-        estimated = model.mu_
-        distance = np.abs(estimated - true_value)
-        y_axis.append(distance)
+    # Question 3 - Plotting Empirical PDF of fitted model
+    pdf = q1_model.pdf(samples)
+    fig_q3 = go.Figure()
+    fig_q3.add_trace(go.Scatter(x=samples, y=pdf, mode="markers"))
+    fig_q3.update_layout(title=Q3_TITLE, xaxis_title=Q3_X_AXIS_NAME, yaxis_title=Q3_Y_AXIS_NAME, height=400, width=1200)
+    fig_q3.show()
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=list(range(10,1001,10)), y=y_axis, mode="markers"))
-    fig.update_layout(title=Q2_TITLE, xaxis_title=Q2_X_AXIS_NAME, yaxis_title=Q2_Y_AXIS_NAME)
-    fig.show()
 
-    # mu_hat = [np.abs(true_value - UnivariateGaussian().fit(samples[:n]).mu_)
-    #           for n in np.arange(1, len(samples) / 10, dtype=np.int) * 10]
-    # go.Figure(go.Scatter(x=list(range(0, len(mu_hat)*10, 10)), y=mu_hat, mode="markers", marker=dict(color="black")),
-    #           layout=dict(template="simple_white",
-    #                       title="Deviation of Sample Mean Estimation As Function of Sample Size",
-    #                       xaxis_title=r"$\text{Sample Size }n$",
-    #                       yaxis_title=r"$\text{Sample Mean Estimator }\hat{\mu}_n$")) \
-    #     .write_image("mean.deviation.over.sample.size.png")
-    # true_value = q1_model.mu_
-    # x_axis = np.linspace(10, 1010, 100)
-    # y_axis = []
-    #
-    # for i in range(10, 1010, 10):
-    #     gaus = UnivariateGaussian()
-    #     gaus.fit(samples[:i])
-    #     estimated = gaus.mu_
-    #     distance = np.abs(estimated - true_value)
-    #     y_axis.append(distance)
-    #
-    # fig = go.Figure()
-    # fig.add_trace(go.Scatter(x=x_axis, y=y_axis, mode="markers+lines"))
-    # fig.update_layout(title="17", xaxis_title="18", yaxis_title="19", height=300)
-    # fig.write_image("q2_graph_3.png")
-    # # Question 3 - Plotting Empirical PDF of fitted model
-    # raise NotImplementedError()
+MULTIVAR_MU = np.array([0, 0, 4, 0])
+MULTIVAR_SIGMA = np.array([[1, 0.2, 0, 0.5],
+                           [0.2, 2, 0, 0],
+                           [0, 0, 1, 0],
+                           [0.5, 0, 0, 1]])
+mu = lambda f1, f3: np.array([f1, 0, f3, 0])
 
 
 def test_multivariate_gaussian():
     # Question 4 - Draw samples and print fitted model
-    # raise NotImplementedError()
-    #
-    # # Question 5 - Likelihood evaluation
-    # raise NotImplementedError()
-    #
-    # # Question 6 - Maximum likelihood
-    # raise NotImplementedError()
+    samples = np.random.multivariate_normal(MULTIVAR_MU, MULTIVAR_SIGMA, SAMPLES_AMOUNT)
+    q4_model = MultivariateGaussian().fit(samples)
+    print(np.round(q4_model.mu_, 3))
+    print(np.round(q4_model.cov_, 3))
+
+    # Question 5 - Likelihood evaluation
+    f_values1 = np.linspace(-10, 10, 200)
+    f_values3 = np.linspace(-10, 10, 200)
+    multivar_log_like = np.zeros((200, 200))
+    max_features = (None, None, np.NINF)
+
+    for i, f1 in enumerate(f_values1):
+        for j, f3 in enumerate(f_values3):
+            curr_ll = MultivariateGaussian.log_likelihood(mu(f1, f3), MULTIVAR_SIGMA, samples)
+
+            if curr_ll > max_features[2]:
+                max_features = (f1, f3, curr_ll)
+
+            multivar_log_like[i, j] = curr_ll
+
+    fig = go.Figure(go.Heatmap(z=multivar_log_like))
+    fig.update_layout(title='Log Likelihood Heatmap', xaxis_title='f1', yaxis_title='f3')
+    fig.show()
+
+    # Question 6 - Maximum likelihood
+    print(str(np.round(max_features[0], 3)) + " " + str(np.round(max_features[1])))
     return 0
+
 
 if __name__ == '__main__':
     np.random.seed(0)
     test_univariate_gaussian()
-    #test_multivariate_gaussian()
+    test_multivariate_gaussian()
