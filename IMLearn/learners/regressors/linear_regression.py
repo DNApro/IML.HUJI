@@ -33,7 +33,8 @@ class LinearRegression(BaseEstimator):
             `LinearRegression.fit` function.
         """
         super().__init__()
-        self.include_intercept_, self.coefs_ = include_intercept, None
+        self.include_intercept_ = include_intercept
+        self.coefs_ = None
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
         """

@@ -34,13 +34,10 @@ def split_train_test(X: pd.DataFrame, y: pd.Series, train_proportion: float = .7
         Responses of test samples
 
     """
-    train_size = math.ceil(train_proportion*X.shape[0])
-    test_size = math.floor((1-train_proportion)*X.shape[0])
-    train_X = X[0:train_size]
-    train_y = y[0:train_size]
-    test_X = X[train_size:]
-    test_y = y[train_size:]
-
+    train_X = X.sample(frac=train_proportion)
+    train_y = y.loc[train_X.index]
+    test_X = X.loc[X.index.difference(train_X.index)]
+    test_y = y.loc[test_X.index]
     return train_X, train_y, test_X, test_y
 
 

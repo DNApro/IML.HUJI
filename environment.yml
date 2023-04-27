@@ -11,8 +11,7 @@ dependencies:
   - requests
   - numpy
   - scikit-learn
-  - python=3.7
-  - plotly-orca
+  - python=3.9
   - matplotlib=3.2.2
   - statsmodels
   - pip
