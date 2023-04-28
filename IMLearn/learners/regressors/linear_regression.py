@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import NoReturn
-from ...base import BaseEstimator
+from base_estimator import BaseEstimator
 import numpy as np
 from numpy.linalg import pinv
-from IMLearn.metrics.loss_functions import mean_square_error
+from loss_functions import mean_square_error
 
 
 
@@ -34,6 +34,7 @@ class LinearRegression(BaseEstimator):
         """
         super().__init__()
         self.include_intercept_ = include_intercept
+
         self.coefs_ = None
 
     def _fit(self, X: np.ndarray, y: np.ndarray) -> NoReturn:
@@ -71,9 +72,9 @@ class LinearRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        if not self.coefs_:
-            return np.null
-        return self._update_to_intercept(X)*self.coefs_
+        if self.coefs_ is None:
+            return None
+        return self._update_to_intercept(X)@self.coefs_
 
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
@@ -99,6 +100,6 @@ class LinearRegression(BaseEstimator):
 
     def _update_to_intercept(self, X):
         if self.include_intercept_:
-            np.insert(X, 0, [1] * X.shape[1], axis=1)
+            return np.c_[np.ones(len(X)), X]
         return X
 
