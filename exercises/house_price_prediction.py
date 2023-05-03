@@ -1,5 +1,5 @@
-from utils import split_train_test
-from linear_regression import LinearRegression
+from IMLearn.utils import split_train_test
+from IMLearn.learners.regressors.linear_regression import LinearRegression
 
 from typing import NoReturn, Optional
 import numpy as np
@@ -56,8 +56,6 @@ def preprocess_train(X: pd.DataFrame, y: pd.Series):
 
     global train_columns
     train_columns = X.columns
-
-
 
     X.dropna()
 
@@ -133,7 +131,7 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
 
 if __name__ == '__main__':
     np.random.seed(0)
-    df = pd.read_csv("./datasets/house_prices.csv")
+    df = pd.read_csv("../datasets/house_prices.csv")
 
     # Question 1 - split data into train and test sets
     df = df[~np.isnan(df.price)]
@@ -174,4 +172,5 @@ if __name__ == '__main__':
                        layout=go.Layout(title="Mean loss tests over different training set sizes",
                                         xaxis=dict(title="Percentage of taken samples from the Training Set"),
                                         yaxis=dict(title="MSE"), showlegend=False))
-    q4_fig.write_image("/mean_loss_percentage.png")
+    # q4_fig.write_image("mean_loss_percentage.png", engine="orca")
+    q4_fig.show()   

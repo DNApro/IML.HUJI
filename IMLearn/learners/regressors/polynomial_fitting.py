@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import NoReturn
-from linear_regression import LinearRegression
-from base_estimator import BaseEstimator
+from IMLearn.learners.regressors.linear_regression import LinearRegression
+from IMLearn.base.base_estimator import BaseEstimator
 import numpy as np
 
 

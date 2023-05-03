@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import NoReturn
-from base_estimator import BaseEstimator
+from IMLearn.base.base_estimator import BaseEstimator
 import numpy as np
 from numpy.linalg import pinv
-from loss_functions import mean_square_error
+from IMLearn.metrics.loss_functions import mean_square_error
 
 
 

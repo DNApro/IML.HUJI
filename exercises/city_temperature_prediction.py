@@ -4,8 +4,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.io as pio
 
-from polynomial_fitting import PolynomialFitting
-from utils import split_train_test
+from IMLearn.learners.regressors.polynomial_fitting import PolynomialFitting
+from IMLearn.utils import split_train_test
 
 pio.templates.default = "simple_white"
 
@@ -81,7 +81,7 @@ def question5_solution(X, IL_df):
 if __name__ == '__main__':
     np.random.seed(0)
     # Question 1 - Load and preprocessing of city temperature dataset
-    X = load_data("./datasets/City_Temperature.csv")
+    X = load_data("../datasets/City_Temperature.csv")
 
     # Question 2 - Exploring data for specific country
     IL_df = question2_solution(X)
