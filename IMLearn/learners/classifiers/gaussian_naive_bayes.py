@@ -39,7 +39,13 @@ class GaussianNaiveBayes(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        n_samples, n_features = X.shape
+        self.__extract_classes(y)
+        self.mu_ = np.zeros((self.classes_.size, n_features))
+        self.vars_ = np.zeros((self.classes_.size, n_features))
+        for k_ind, k in enumerate(self.classes_):
+            self.mu_[k_ind] = np.mean(X[y==k], axis=0)
+            self.vars_[k_ind] = np.var(X[y==k], axis=0, ddof=1)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -55,7 +61,8 @@ class GaussianNaiveBayes(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return self.classes_[np.argmax(self.likelihood(X), axis=1)]
+
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -75,7 +82,16 @@ class GaussianNaiveBayes(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        raise NotImplementedError()
+        n_samples, n_classes = X.shape[0], self.classes_.size
+        likelihood_matrix= np.zeros((n_samples, n_classes))
+        for k in self.classes_:
+            Z = np.sqrt(self.vars_[k]*2*np.pi)
+            exp_coeff = -((X-self.mu_[k])**2)/(2*self.vars_[k])
+            gaussian_pdf = np.exp(exp_coeff)/Z
+            likelihood_matrix[:, k] = np.prod(gaussian_pdf, axis=1)*self.pi_[k]
+
+        return likelihood_matrix
+
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -95,4 +111,10 @@ class GaussianNaiveBayes(BaseEstimator):
             Performance under missclassification loss function
         """
         from ...metrics import misclassification_error
-        raise NotImplementedError()
+        return misclassification_error(y, self._predict(X))
+
+    def __extract_classes(self, y):
+        #create an array with the unique classes, and an array of apperance counts of each class
+        self.classes_, a_classes = np.unique(y, return_counts = True)
+        self.pi_ = a_classes/y.size
+

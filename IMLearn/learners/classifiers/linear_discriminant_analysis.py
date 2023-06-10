@@ -1,7 +1,9 @@
 from typing import NoReturn
-from ...base import BaseEstimator
+
 import numpy as np
-from numpy.linalg import det, inv
+from numpy.linalg._umath_linalg import inv
+
+from ...base import BaseEstimator
 
 
 class LDA(BaseEstimator):
@@ -46,7 +48,16 @@ class LDA(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        n_samples, n_features = X.shape
+        self.__extract_classes(y)
+        self.mu_ = np.array([np.mean(X[y == k], axis=0) for k in self.classes_])
+
+        #centered feature vector
+        cfv = X - np.array(self.mu_[y.astype(int)])
+
+        self.cov_ = np.einsum("ki,kj->kij", cfv, cfv).sum(axis=0) / (len(X) - len(self.classes_))
+        self._cov_inv = inv(self.cov_)
+
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -62,7 +73,7 @@ class LDA(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return self.classes_[np.argmax(self.likelihood(X), axis=1)]
 
     def likelihood(self, X: np.ndarray) -> np.ndarray:
         """
@@ -82,7 +93,14 @@ class LDA(BaseEstimator):
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `likelihood` function")
 
-        raise NotImplementedError()
+        n_samples, n_features = X.shape
+
+        z = np.sqrt((2 * np.pi) ** n_features * np.linalg.det(self.cov_))
+        cfv = X[:, np.newaxis, :] - self.mu_
+        exp_coef = np.sum(cfv.dot(self._cov_inv) * cfv, axis=2)
+        return self.pi_ * np.exp(-exp_coef/2) / z
+
+
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -102,4 +120,10 @@ class LDA(BaseEstimator):
             Performance under missclassification loss function
         """
         from ...metrics import misclassification_error
-        raise NotImplementedError()
+        return misclassification_error(y, self._predict(X))
+
+
+    def __extract_classes(self, y):
+        #create an array with the unique classes, and an array of apperance counts of each class
+        self.classes_, a_classes = np.unique(y, return_counts = True)
+        self.pi_ = a_classes/y.size

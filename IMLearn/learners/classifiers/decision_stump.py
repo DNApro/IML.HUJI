@@ -39,7 +39,11 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        raise NotImplementedError()
+        error = np.inf
+        for j, sign in product(range(X.shape[1]), [-1, 1]):
+            thr, thr_err = self._find_threshold(X[:, j], y, sign)
+            if thr_err < error:
+                self.threshold_, self.j_, self.sign_, error = thr, j, sign, thr_err
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -63,7 +67,7 @@ class DecisionStump(BaseEstimator):
         Feature values strictly below threshold are predicted as `-sign` whereas values which equal
         to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        return np.where(X[:, self.j_] < self.threshold_, -self.sign_, self.sign_)
 
     def _find_threshold(self, values: np.ndarray, labels: np.ndarray, sign: int) -> Tuple[float, float]:
         """
@@ -95,7 +99,27 @@ class DecisionStump(BaseEstimator):
         For every tested threshold, values strictly below threshold are predicted as `-sign` whereas values
         which equal to or above the threshold are predicted as `sign`
         """
-        raise NotImplementedError()
+        # In class, we learned that a threshold classifier aims to find the maximum value that has a label of -1.
+        # Sorting the input reduces the running time of finding that value from O(n^2) to O(n) instead.
+        # After searching on Google, I found that numpy sorts an array inO(nlog(n)),
+        # so the total running time is O(nlog(n)).
+        sorted_indices = np.argsort(values)
+        sorted_values = values[sorted_indices]
+        labels = labels[sorted_indices]
+        abs_labels = np.abs(labels)
+
+        # Calculating the Threshold-Based loss
+        tb_loss = np.sum(abs_labels[np.sign(labels) != sign])
+        # Calculating the Cumulative Threshold loss
+        cumulative_loss = tb_loss + np.cumsum(sign * labels)
+
+        tb_loss = np.append(tb_loss, cumulative_loss)
+        th_ind = np.argmin(tb_loss)
+        threshold_values = np.concatenate([[-np.inf], sorted_values[1:], [np.inf]])
+        return threshold_values[th_ind], tb_loss[th_ind]
+        # return np.concatenate([-np.inf], values[1:], [np.inf])[th_ind], tb_loss[th_ind]
+
+
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -114,4 +138,9 @@ class DecisionStump(BaseEstimator):
         loss : float
             Performance under missclassification loss function
         """
-        raise NotImplementedError()
+        from IMLearn.metrics.loss_functions import misclassification_error
+        return misclassification_error(y, self._predict(X))
+
+
+
+
