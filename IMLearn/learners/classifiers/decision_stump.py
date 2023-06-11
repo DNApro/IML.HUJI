@@ -39,11 +39,11 @@ class DecisionStump(BaseEstimator):
         y : ndarray of shape (n_samples, )
             Responses of input data to fit to
         """
-        error = np.inf
+        min_error = np.inf
         for j, sign in product(range(X.shape[1]), [-1, 1]):
             thr, thr_err = self._find_threshold(X[:, j], y, sign)
-            if thr_err < error:
-                self.threshold_, self.j_, self.sign_, error = thr, j, sign, thr_err
+            if thr_err < min_error:
+                self.threshold_, self.j_, self.sign_, min_error = thr, j, sign, thr_err
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -109,14 +109,14 @@ class DecisionStump(BaseEstimator):
         abs_labels = np.abs(labels)
 
         # Calculating the Threshold-Based loss
-        tb_loss = np.sum(abs_labels[np.sign(labels) != sign])
+        thb_loss = np.sum(abs_labels[np.sign(labels) != sign])
         # Calculating the Cumulative Threshold loss
-        cumulative_loss = tb_loss + np.cumsum(sign * labels)
+        cumulative_loss = thb_loss - np.cumsum(sign * labels)
 
-        tb_loss = np.append(tb_loss, cumulative_loss)
-        th_ind = np.argmin(tb_loss)
+        thb_loss = np.append(thb_loss, cumulative_loss)
+        th_ind = np.argmin(thb_loss)
         threshold_values = np.concatenate([[-np.inf], sorted_values[1:], [np.inf]])
-        return threshold_values[th_ind], tb_loss[th_ind]
+        return threshold_values[th_ind], thb_loss[th_ind]
         # return np.concatenate([-np.inf], values[1:], [np.inf])[th_ind], tb_loss[th_ind]
 
 

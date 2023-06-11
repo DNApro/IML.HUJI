@@ -65,8 +65,6 @@ class AdaBoost(BaseEstimator):
 
 
 
-
-
     def _predict(self, X):
         """
         Predict responses for given samples using fitted estimator
@@ -119,12 +117,13 @@ class AdaBoost(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
+        T = min(T, self.iterations_)
         # weighted_predictions = [self.weights_[t]*self.models_[t].predict(X) for t in range(T)]
-        weighted_predictions = [0]*T
+        weighted_predictions = np.zeros(X.shape[0])
         for t in range(T):
             pred = self.models_[t].predict(X)
-            weighted_predictions[t] = self.weights_[t]*pred
-        return np.sign(np.sum([weighted_predictions]))
+            weighted_predictions += self.weights_[t]*pred
+        return np.sign(weighted_predictions)
 
     def partial_loss(self, X: np.ndarray, y: np.ndarray, T: int) -> float:
         """
