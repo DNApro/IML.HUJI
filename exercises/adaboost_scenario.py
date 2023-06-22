@@ -39,53 +39,65 @@ def generate_data(n: int, noise_ratio: float) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def question_1_func(n_learners, noise, test_errors, train_errors):
-    fig = go.Figure(
-        data=[
-            go.Scatter(x=list(range(1, n_learners + 1)), y=train_errors, name="Train Error", mode="lines"),
-            go.Scatter(x=list(range(1, n_learners + 1)), y=test_errors, name="Test Error", mode="lines")
-        ],
-        layout=go.Layout(
-            width=800, height=600,
-            title={"x": 0.5, "text": r"$\text{AdaBoost Misclassification As Function Of Number Of Classifiers}$"},
-            xaxis_title=r"$\text{Number of Fitted Learners}$",
-            yaxis_title=r"$\text{Misclassification Loss}$"
+    x_axis = list(range(1, n_learners + 1))
+    title = f"Performance Analysis of ({noise} noised) AdaBoost with Increasing Classifiers"
+    fig_q1 = go.Figure(
+        data=[go.Scatter(x=x_axis, y=train_errors, name="Train Error", mode="lines"),
+              go.Scatter(x=x_axis, y=test_errors, name="Test Error", mode="lines")
+              ],
+        layout=go.Layout(width=1200, height=600,
+                         title={"x":0.5, "text": title},
+                         xaxis_title="Number of Fitted Learners",
+                         yaxis_title="Misclassification Error"
         )
     )
-    fig.write_image(f"adaboost_w_{noise}_noise.png")
+    fig_q1.write_image(f"adaboost_w_{noise}_noise.png")
 
 
 def question_2_func(adab_model, T, lims, noise, test_X, test_y):
-    fig = make_subplots(rows=1, cols=4, subplot_titles=[rf"$\text{{{t} Classifiers}}$" for t in T])
+    fig_q2 = make_subplots(rows=1, cols=4, subplot_titles=[rf"{t} Classifiers" for t in T])
     for i, t in enumerate(T):
-        fig.add_traces(
-            [decision_surface(lambda X: adab_model.partial_predict(X, t), lims[0], lims[1], density=60, showscale=False),
-             go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
-                        marker=dict(color=test_y, symbol=np.where(test_y == 1, "circle", "x")))],
-            rows=1, cols=i + 1)
-    fig.update_layout(height=500, width=2000).update_xaxes(visible=False).update_yaxes(visible=False)
-    fig.write_image(f"adaboost_{noise}_decision_boundaries.png")
+        dec_surf = decision_surface(lambda X: adab_model.partial_predict(X, t),
+                                    lims[0], lims[1], density=60, showscale=False)
+        fig_q2.add_traces([dec_surf,
+                           go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
+                                      marker=dict(color=test_y, symbol=np.where(test_y == 1, "circle", "x")))
+                           ], rows=1, cols=i + 1)
+    title = "AdaBoost Decision Boundaries for Different Numbers of Classifiers"
+    fig_q2.update_layout(height=500, width=2000, title=title).update_xaxes(visible=False).update_yaxes(visible=False)
+    fig_q2.write_image(f"adaboost_{noise}_decision_boundaries.png")
 
 
 def question_3_func(adab_model, lims, noise, test_X, test_errors, test_y):
     best_t = np.argmin(test_errors) + 1
-    fig = go.Figure([
-        decision_surface(lambda X: adab_model.partial_predict(X, best_t), lims[0], lims[1], density=60, showscale=False),
-        go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
-                   marker=dict(color=test_y, symbol=np.where(test_y == 1, "circle", "x")))],
-        layout=go.Layout(width=500, height=500, xaxis=dict(visible=False), yaxis=dict(visible=False),
-                         title=f"Best Performing Ensemble<br>Size: {best_t}, Accuracy: {1 - round(test_errors[best_t - 1], 2)}"))
-    fig.write_image(f"adaboost_{noise}_best_over_test.png")
+    dec_surf = decision_surface(lambda X: adab_model.partial_predict(X, best_t),
+                                lims[0], lims[1], density=60, showscale=False)
+    fig_q3 = go.Figure([dec_surf,
+                        go.Scatter(x=test_X[:, 0], y=test_X[:, 1], mode="markers", showlegend=False,
+                                   marker=dict(color=test_y, symbol=np.where(test_y == 1, "circle", "x")))
+                        ],
+                       layout=go.Layout(width=500, height=500, xaxis=dict(visible=False), yaxis=dict(visible=False),
+                                        title=f"Optimal Decision Surface for AdaBoost<br>Size: {best_t}, "\
+                                              f"Accuracy: {1 - round(test_errors[best_t - 1], 2)}"))
+    file_name = f"adaboost_{noise}_optimal_DecSurf_size{best_t}_accuracy{1 - round(test_errors[best_t - 1], 2)}.png"
+    fig_q3.write_image(file_name)
+
 
 
 def question_4_func(adab_model, lims, noise, train_X, train_y):
     D = 20 * adab_model.D_ / adab_model.D_.max()
-    fig = go.Figure([
-        decision_surface(adab_model.predict, lims[0], lims[1], density=60, showscale=False),
-        go.Scatter(x=train_X[:, 0], y=train_X[:, 1], mode="markers", showlegend=False,
-                   marker=dict(size=D, color=train_y, symbol=np.where(train_y == 1, "circle", "x")))],
-        layout=go.Layout(width=500, height=500, xaxis=dict(visible=False), yaxis=dict(visible=False),
-                         title=f"Final AdaBoost Sample Distribution"))
-    fig.write_image(f"adaboost_{noise}_weighted_samples.png")
+    dec_surf = decision_surface(adab_model.predict, lims[0], lims[1], density=60, showscale=False)
+    fig_q4 = go.Figure([dec_surf,
+                        go.Scatter(x=train_X[:, 0], y=train_X[:, 1], mode="markers", showlegend=False,
+                                   marker=dict(size=D, color=train_y, symbol=np.where(train_y == 1, "circle", "x")))
+                        ],
+                       layout=go.Layout(width=500, height=500, xaxis=dict(visible=False), yaxis=dict(visible=False),
+                                        title="Final Sample Distribution in AdaBoost"))
+    file_name = f"adaboost_{noise}_final_sample_distribution.png"
+    fig_q4.write_image(file_name)
+
+
+
 
 def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=500):
     (train_X, train_y), (test_X, test_y) = generate_data(train_size, noise), generate_data(test_size, noise)
@@ -115,6 +127,9 @@ def fit_and_evaluate_adaboost(noise, n_learners=250, train_size=5000, test_size=
 
     # Question 4: Decision surface with weighted samples
     question_4_func(adab, lims, noise, train_X, train_y)
+
+
+
 
 
 if __name__ == '__main__':

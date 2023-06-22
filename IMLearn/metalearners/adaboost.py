@@ -56,13 +56,14 @@ class AdaBoost(BaseEstimator):
             model_t = self.wl_()
             model_t.fit(X, (self.D_ * y))
             y_pred = model_t.predict(X)
-            eps_t = np.sum(self.D_[y != y_pred])
+            misclass = np.zeros(y.shape)
+            misclass[np.argwhere(y != y_pred)] = 1
+            eps_t = np.sum(self.D_ * misclass)
             self.weights_[t] = np.log((1/eps_t) - 1)/2
             self.models_.append(model_t)
 
             self.D_ *= np.exp(-(y_pred * y * self.weights_[t]))
             self.D_ /= np.sum(self.D_)
-
 
 
     def _predict(self, X):
@@ -118,7 +119,7 @@ class AdaBoost(BaseEstimator):
             Predicted responses of given samples
         """
         T = min(T, self.iterations_)
-        # weighted_predictions = [self.weights_[t]*self.models_[t].predict(X) for t in range(T)]
+
         weighted_predictions = np.zeros(X.shape[0])
         for t in range(T):
             pred = self.models_[t].predict(X)
