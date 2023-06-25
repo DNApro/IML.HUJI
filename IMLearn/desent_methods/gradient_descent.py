@@ -3,6 +3,7 @@ from typing import Callable, NoReturn
 import numpy as np
 
 from IMLearn.base import BaseModule, BaseLR
+from anaconda3.Lib import copy
 from .learning_rate import FixedLR
 
 OUTPUT_VECTOR_TYPE = ["last", "best", "average"]
@@ -119,4 +120,33 @@ class GradientDescent:
                 Euclidean norm of w^(t)-w^(t-1)
 
         """
-        raise NotImplementedError()
+        x = [0, copy.deepcopy(f.weights)]
+        best_vals = (x[1], f.compute_output(X=X, y=y))
+        callb_val_param = f.compute_output(X=X, y=y)
+        for t in range(1, self.max_iter_+1):
+            delta = self.__delta(x, t)
+            if delta <= self.tol_:
+                break
+            eta_t = self.learning_rate_.lr_step(t=t)
+            grad_t = f.compute_jacobian(X=X, y=y)
+            curr_output = f.compute_output(X=X, y=y)
+            if best_vals[1] > curr_output:
+                best_vals = (x[t], curr_output)
+            x.append(x[t] - eta_t*grad_t)
+            f.weights = x[t+1]
+
+            self.callback_(solver=self, weights=x[t], val=callb_val_param,
+                           grad=grad_t, t=t, eta=eta_t, delta=delta)
+
+        x = x[1:]
+        if self.out_type_ == "last":
+            return x[-1]
+        elif self.out_type_ == "best":
+            return best_vals[0]
+        else:
+            return np.mean(x)
+
+    def __delta(self, x, t):
+        return np.linalg.norm(x[t] - x[t-1])
+
+

@@ -73,25 +73,55 @@ def get_gd_state_recorder_callback() -> Tuple[Callable[[], None], List[np.ndarra
     weights: List[np.ndarray]
         Recorded parameters
     """
-    raise NotImplementedError()
+    _vals = []
+    _weights = []
+
+    def cb_func(solver: GradientDescent, weights: np.ndarray,
+                 val: np.ndarray, grad: np.ndarray, t: int, eta: float, delta: float):
+        _vals.append(val)
+        _weights.append(weights)
+
+    return cb_func, _vals, _weights
 
 
 def compare_fixed_learning_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
                                  etas: Tuple[float] = (1, .1, .01, .001)):
-    raise NotImplementedError()
+    lrs = [FixedLR(eta) for eta in etas]
+
+    l1_vals, l2_vals = [], []
 
 
-def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
-                                    eta: float = .1,
-                                    gammas: Tuple[float] = (.9, .95, .99, 1)):
-    # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
-    raise NotImplementedError()
+    for i in range(len(etas)):
+        l1_module = L1(init)
+        l2_module = L2(init)
+        l1_cb, l1_rec_vals, l1_rec_weights = get_gd_state_recorder_callback()
+        l2_cb, l2_rec_vals, l2_rec_weights = get_gd_state_recorder_callback()
 
-    # Plot algorithm's convergence for the different values of gamma
-    raise NotImplementedError()
+        gd_l1 = GradientDescent(learning_rate=lrs[i], callback=l1_cb)
+        w_l1 = gd_l1.fit(l1_module, None, None)
+        l1_vals.append(l1_rec_vals)
 
-    # Plot descent path for gamma=0.95
-    raise NotImplementedError()
+        gd_l2 = GradientDescent(learning_rate=lrs[i], callback=l2_cb)
+        w_l2 = gd_l2.fit(l2_module, None, None)
+        l2_vals.append(l2_rec_vals)
+
+        plot_descent_path(L2, np.array(l2_rec_weights),
+                          title=f"L2 Descent Path With Eta = {etas[i]}").show()
+        plot_descent_path(L1, np.array(l1_rec_weights),
+                          title=f"L1 Descent Path With Eta = {etas[i]}").show()
+
+
+# def compare_exponential_decay_rates(init: np.ndarray = np.array([np.sqrt(2), np.e / 3]),
+#                                     eta: float = .1,
+#                                     gammas: Tuple[float] = (.9, .95, .99, 1)):
+#     # Optimize the L1 objective using different decay-rate values of the exponentially decaying learning rate
+#     raise NotImplementedError()
+#
+#     # Plot algorithm's convergence for the different values of gamma
+#     raise NotImplementedError()
+#
+#     # Plot descent path for gamma=0.95
+#     raise NotImplementedError()
 
 
 def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8) -> \
@@ -126,20 +156,20 @@ def load_data(path: str = "../datasets/SAheart.data", train_portion: float = .8)
     return split_train_test(df.drop(['chd', 'row.names'], axis=1), df.chd, train_portion)
 
 
-def fit_logistic_regression():
-    # Load and split SA Heard Disease dataset
-    X_train, y_train, X_test, y_test = load_data()
-
-    # Plotting convergence rate of logistic regression over SA heart disease data
-    raise NotImplementedError()
-
-    # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
-    # of regularization parameter
-    raise NotImplementedError()
+# def fit_logistic_regression():
+#     # Load and split SA Heard Disease dataset
+#     X_train, y_trai, X_test, y_test = load_data()
+#
+#     # Plotting convergence rate of logistic regression over SA heart disease data
+#     raise NotImplementedError()
+#
+#     # Fitting l1- and l2-regularized logistic regression models, using cross-validation to specify values
+#     # of regularization parameter
+#     raise NotImplementedError()
 
 
 if __name__ == '__main__':
     np.random.seed(0)
     compare_fixed_learning_rates()
-    compare_exponential_decay_rates()
-    fit_logistic_regression()
+    # compare_exponential_decay_rates()
+    # fit_logistic_regression()
