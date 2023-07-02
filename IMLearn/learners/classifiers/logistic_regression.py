@@ -88,7 +88,11 @@ class LogisticRegression(BaseEstimator):
         Fits model using specified `self.optimizer_` passed when instantiating class and includes an intercept
         if specified by `self.include_intercept_
         """
-        raise NotImplementedError()
+        if self.include_intercept_:
+            X = np.c_[np.ones(X.shape[0]), X]
+
+        logistic_mod = self.__create_logistic_mod(X.shape[1])
+        self.coefs_ = self.solver_.fit(logistic_mod, X, y)
 
     def _predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -104,7 +108,7 @@ class LogisticRegression(BaseEstimator):
         responses : ndarray of shape (n_samples, )
             Predicted responses of given samples
         """
-        raise NotImplementedError()
+        return np.where(self.predict_proba(X) > self.alpha_, 1, 0)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
@@ -120,7 +124,11 @@ class LogisticRegression(BaseEstimator):
         probabilities: ndarray of shape (n_samples,)
             Probability of each sample being classified as `1` according to the fitted model
         """
-        raise NotImplementedError()
+        if self.include_intercept_:
+            X = np.c_[np.ones(X.shape[0]), X]
+
+        exp = np.exp(X @ self.coefs_)
+        return exp/(1+exp)
 
     def _loss(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -139,4 +147,25 @@ class LogisticRegression(BaseEstimator):
         loss : float
             Performance under misclassification error
         """
-        raise NotImplementedError()
+        from ...metrics.loss_functions import misclassification_error
+        return misclassification_error(y, self.predict(X))
+
+
+    def __create_logistic_mod(self, d):
+        mu_vec = np.zeros(d)
+        cov_matrix = np.identity(d) / d
+        weights = np.random.multivariate_normal(mu_vec, cov_matrix)
+
+        fidelity_module = LogisticModule(weights)
+
+        if self.penalty_ == "none":
+            return fidelity_module
+
+        regular_module = None
+        if self.penalty_ == "l1":
+            regular_module = L1(weights)
+        elif self.penalty_ == "l2":
+            regular_module = L2(weights)
+
+        return LogisticModule(fidelity_module, regular_module, self.lam_,
+                              weights, self.include_intercept_)

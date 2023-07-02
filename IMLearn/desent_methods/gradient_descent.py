@@ -122,7 +122,6 @@ class GradientDescent:
         """
         x = [0, copy.deepcopy(f.weights)]
         best_vals = (x[1], f.compute_output(X=X, y=y))
-        callb_val_param = f.compute_output(X=X, y=y)
         for t in range(1, self.max_iter_+1):
             delta = self.__delta(x, t)
             if delta <= self.tol_:
@@ -135,7 +134,7 @@ class GradientDescent:
             x.append(x[t] - eta_t*grad_t)
             f.weights = x[t+1]
 
-            self.callback_(solver=self, weights=x[t], val=callb_val_param,
+            self.callback_(solver=self, weights=x[t], val=curr_output,
                            grad=grad_t, t=t, eta=eta_t, delta=delta)
 
         x = x[1:]
